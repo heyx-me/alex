@@ -5,222 +5,110 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Chat | heyx-me</title>
     <meta name="theme-color" content="#030305">
-    
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%237c3aed%22/><path d=%22M25 50L40 65L75 30%22 stroke=%22white%22 stroke-width=%228%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
     <style>
-        :root {
-            --bg-dark: #030305;
-            --card-bg: rgba(20, 20, 25, 0.6);
-            --text-color: #ffffff;
-            --text-muted: #9494a8;
-            --accent-primary: #7c3aed;
-            --accent-secondary: #2dd4bf;
-            --accent-cyan: #00f0ff;
-            --font-main: 'Plus Jakarta Sans', sans-serif;
-            --msg-bg-me: #7c3aed;
-            --msg-bg-other: rgba(255, 255, 255, 0.1);
-            --safe-bottom: env(safe-area-inset-bottom, 20px);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            -webkit-tap-highlight-color: transparent;
-        }
-
         html, body {
             height: 100%;
             width: 100%;
-            overflow: hidden; /* Prevent body scroll, handle in chat area */
-            background-color: var(--bg-dark);
-            font-family: var(--font-main);
-            color: var(--text-color);
+            overflow: hidden;
+            background-color: #030305;
+            margin: 0;
         }
-
-        .bg-fixed-layer {
+        #three-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            z-index: 1;
-            pointer-events: none;
-            overflow: hidden;
-            background: #000;
         }
-...
-    <!-- On-Screen Error Logger for Mobile Debugging -->
-    <script>
-        window.onerror = function(msg, url, line, col, error) {
-            const div = document.createElement("div");
-            div.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; background: rgba(255,0,0,0.9); color: white; padding: 15px; z-index: 99999; font-family: monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all;";
-            div.innerText = "ERROR: " + msg + "\nLine: " + line;
-            document.body.appendChild(div);
-            return false;
-        };
-    </script>
-    <!-- On-Screen Error Logger -->
-    <script>
-        window.onerror = function(msg, url, line, col, error) {
-            const div = document.createElement("div");
-            div.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; background: rgba(255,0,0,0.9); color: white; padding: 15px; z-index: 100000; font-family: monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all;";
-            div.innerText = "ERROR: " + msg + "\nLine: " + line;
-            document.body.appendChild(div);
-            return false;
-        };
-    </script>
-    <style>
-        .chat-container { z-index: 999 !important; }
     </style>
-
-    <!-- On-Screen Error Logger -->
-    <script>
-        window.onerror = function(msg, url, line, col, error) {
-            const div = document.createElement("div");
-            div.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; background: rgba(255,0,0,0.9); color: white; padding: 15px; z-index: 100000; font-family: monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all;";
-            div.innerText = "ERROR: " + msg + "\nLine: " + line;
-            document.body.appendChild(div);
-            return false;
-        };
-    </script>
-    <style>
-        .chat-container { z-index: 999 !important; }
-    </style>
-
-    <div class="bg-fixed-layer" id="three-container"></div>
-
-    <div class="chat-container">
-        <header class="chat-header">
-            <div class="avatar">
-                <!-- Image Removed -->
-            </div>
-            <div class="header-info">
-                <h2 id="room-title">Alex</h2>
-                <span><div class="status-dot"></div> Online</span>
-            </div>
-        </header>
-
-        <div class="messages-area" id="messagesList">
-            <div class="empty-state" id="emptyState">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                <p>Start the conversation...</p>
-            </div>
-        </div>
-
-        <div class="input-area">
-            <div class="input-wrapper">
-                <textarea id="messageInput" placeholder="Type a message..." rows="1"></textarea>
-            </div>
-            <button class="send-btn" id="sendBtn" disabled>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-            </button>
-        </div>
-    </div>
-
-
-
-<script type="importmap">
+</head>
+<body>
+    <div id="three-container"></div>
+    <script type="importmap">
     {
         "imports": {
             "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
             "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
         }
     }
-</script>
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-<script type="module">
-    import * as THREE from 'three';
-    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-    import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+        const container = document.getElementById('three-container');
+        if (!container) return;
 
-    const container = document.getElementById('three-container');
-    if (!container) return;
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 8;
 
-    // --- Scene Setup ---
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 8;
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    container.appendChild(renderer.domElement);
-
-    // --- Post Processing (The Glow) ---
-    const renderScene = new RenderPass(scene, camera);
-    const bloomPass = new UnrealBloomPass(
-        new THREE.Vector2(window.innerWidth, window.innerHeight), 
-        1.5, // Strength
-        0.4, // Radius
-        0.1  // Threshold
-    );
-    
-    const composer = new EffectComposer(renderer);
-    composer.addPass(renderScene);
-    composer.addPass(bloomPass);
-    composer.addPass(new OutputPass());
-
-    // --- Neon Trails ---
-    function createTrail(color, xOffset, thickness = 0.015) {
-        const points = [];
-        for (let i = 0; i < 20; i++) {
-            points.push(new THREE.Vector3(
-                Math.sin(i * 0.4 + xOffset) * 1.5,
-                i * 0.8 - 8,
-                Math.cos(i * 0.4 + xOffset) * 1.5
-            ));
-        }
-        const curve = new THREE.CatmullRomCurve3(points);
-        const tubeGeom = new THREE.TubeGeometry(curve, 100, thickness, 8, false);
-        const tubeMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.6 });
-        const tube = new THREE.Mesh(tubeGeom, tubeMat);
-        scene.add(tube);
-        return tube;
-    }
-
-    const trail1 = createTrail(0x00ffff, 0);
-    const trail2 = createTrail(0xff00ff, Math.PI);
-    const trail3 = createTrail(0x00ffff, Math.PI * 0.5, 0.005);
-    const trail4 = createTrail(0xff00ff, Math.PI * 1.5, 0.005);
-
-    // --- Starfield ---
-    const starGeo = new THREE.BufferGeometry();
-    const starPos = [];
-    for(let i=0; i<3000; i++) {
-        starPos.push((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100);
-    }
-    starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
-    const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2 });
-    scene.add(new THREE.Points(starGeo, starMat));
-
-    // --- Animation ---
-    function animate() {
-        requestAnimationFrame(animate);
-        
-        trail1.rotation.y += 0.001;
-        trail2.rotation.y -= 0.001;
-        trail3.rotation.y += 0.0015;
-        trail4.rotation.y -= 0.0015;
-        
-        composer.render();
-    }
-
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        composer.setSize(window.innerWidth, window.innerHeight);
-    });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
 
-    animate();
-</script>
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.1
+        );
+        
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+        composer.addPass(new OutputPass());
 
+        function createTrail(color, xOffset, thickness = 0.015) {
+            const points = [];
+            for (let i = 0; i < 20; i++) {
+                points.push(new THREE.Vector3(
+                    Math.sin(i * 0.4 + xOffset) * 1.5,
+                    i * 0.8 - 8,
+                    Math.cos(i * 0.4 + xOffset) * 1.5
+                ));
+            }
+            const curve = new THREE.CatmullRomCurve3(points);
+            const tubeGeom = new THREE.TubeGeometry(curve, 100, thickness, 8, false);
+            const tubeMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.6 });
+            const tube = new THREE.Mesh(tubeGeom, tubeMat);
+            scene.add(tube);
+            return tube;
+        }
+
+        const trail1 = createTrail(0x00ffff, 0);
+        const trail2 = createTrail(0xff00ff, Math.PI);
+        const trail3 = createTrail(0x00ffff, Math.PI * 0.5, 0.005);
+        const trail4 = createTrail(0xff00ff, Math.PI * 1.5, 0.005);
+
+        const starGeo = new THREE.BufferGeometry();
+        const starPos = [];
+        for(let i=0; i<3000; i++) {
+            starPos.push((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100);
+        }
+        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+        const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2 });
+        scene.add(new THREE.Points(starGeo, starMat));
+
+        function animate() {
+            requestAnimationFrame(animate);
+            trail1.rotation.y += 0.001;
+            trail2.rotation.y -= 0.001;
+            trail3.rotation.y += 0.0015;
+            trail4.rotation.y -= 0.0015;
+            composer.render();
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
 </body>
 </html>
