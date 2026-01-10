@@ -68,14 +68,14 @@
             border-radius: 18px;
             font-size: 15px;
             line-height: 1.4;
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(8px);
             animation: fadeIn 0.3s ease-out;
             word-wrap: break-word;
         }
 
         .message.user {
             align-self: flex-end;
-            background: rgba(0, 255, 255, 0.15);
+            background: rgba(0, 255, 255, 0.1);
             border: 1px solid rgba(0, 255, 255, 0.3);
             color: #e0ffff;
             border-bottom-right-radius: 4px;
@@ -83,7 +83,7 @@
 
         .message.bot {
             align-self: flex-start;
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #f0f0f0;
             border-bottom-left-radius: 4px;
@@ -233,7 +233,7 @@
                 }
                 const curve = new THREE.CatmullRomCurve3(points);
                 const tubeGeom = new THREE.TubeGeometry(curve, 400, thickness, 8, false);
-                const tubeMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.6 });
+                const tubeMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.3 });
                 const tube = new THREE.Mesh(tubeGeom, tubeMat);
                 scene.add(tube);
                 return tube;
@@ -250,7 +250,7 @@
                 starPos.push((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100);
             }
             starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
-            const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2 });
+            const starMat = new THREE.PointsMaterial({ color: 0x888888, size: 0.12 });
             const stars = new THREE.Points(starGeo, starMat);
             scene.add(stars);
 

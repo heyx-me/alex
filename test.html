@@ -118,8 +118,7 @@
 
         const tubeGeom = new THREE.TubeGeometry(curve, 100, thickness, 8, false);
 
-        const tubeMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.6 });
-
+                    const tubeMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.3 });
         const tube = new THREE.Mesh(tubeGeom, tubeMat);
 
         scene.add(tube);
