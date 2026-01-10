@@ -251,10 +251,30 @@
             }
             starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
             const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2 });
-            scene.add(new THREE.Points(starGeo, starMat));
+            const stars = new THREE.Points(starGeo, starMat);
+            scene.add(stars);
 
             function animate() {
                 requestAnimationFrame(animate);
+
+                // Parallax stars
+                const positions = stars.geometry.attributes.position.array;
+                for(let i = 0; i < positions.length; i += 3) {
+                    // z is at index i+2. Range is approx -50 to 50.
+                    // Map z to speed: higher z (closer) -> faster speed.
+                    const z = positions[i+2];
+                    const speed = 0.01 + ((z + 50) / 100) * 0.05;
+                    
+                    // Move on x axis (index i)
+                    positions[i] -= speed;
+
+                    // Wrap around
+                    if (positions[i] < -50) {
+                        positions[i] = 50;
+                    }
+                }
+                stars.geometry.attributes.position.needsUpdate = true;
+
                 trail1.rotation.y += 0.001;
                 trail2.rotation.y -= 0.001;
                 trail3.rotation.y += 0.0015;
