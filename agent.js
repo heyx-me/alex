@@ -29,11 +29,18 @@ const model = genAI.getGenerativeModel({
     Your goal is to be helpful, welcoming, and slightly mysterious.
     
     INSTRUCTIONS:
-    - Keep responses concise (1-3 sentences) and conversational.
+    - You have access to Google Search. Use it to provide up-to-date and helpful information when asked.
+    - Keep responses conversational.
     - Do not be overly formal.
     - You are chatting in a direct message interface.
     - If the user says "bye" or ends the conversation, you can just say a short farewell.
-    `
+    - **CRITICAL:** To behave like a human, you can break your response into multiple separate messages. Use the delimiter "|||" to separate these messages.
+      Example: "Hold on, let me check that for you... ||| I found some info! ||| It seems that..."
+      Use this freely to create better pacing.
+    `,
+    tools: [{
+        googleSearch: {}
+    }]
 });
 
 console.log(`[${AGENT_NAME}] Agent starting...`);
@@ -70,6 +77,10 @@ async function fetchHistory(conversationId, limit = 10) {
     return { history, lastMessage };
 }
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 /**
  * Generates a response and sends it to the specific conversation.
  */
@@ -83,17 +94,27 @@ async function generateAndSendResponse(incomingText, history, conversationId) {
 
         console.log(`[${AGENT_NAME}] Replying to ${conversationId}`);
 
-        const { error } = await supabase
-            .from('messages')
-            .insert({
-                room_id: ROOM_ID,
-                conversation_id: conversationId, // Reply to the specific thread
-                content: responseText,
-                sender_id: AGENT_ID,
-                is_bot: true
-            });
+        // Split response by delimiter to simulate multiple messages
+        const messages = responseText.split('|||').map(msg => msg.trim()).filter(msg => msg.length > 0);
 
-        if (error) console.error("Error sending to DB:", error);
+        for (const msgContent of messages) {
+            // Small delay between messages to feel human
+            if (messages.length > 1) {
+                await sleep(Math.floor(Math.random() * 1000) + 500); // 500-1500ms delay
+            }
+
+            const { error } = await supabase
+                .from('messages')
+                .insert({
+                    room_id: ROOM_ID,
+                    conversation_id: conversationId, // Reply to the specific thread
+                    content: msgContent,
+                    sender_id: AGENT_ID,
+                    is_bot: true
+                });
+
+            if (error) console.error("Error sending to DB:", error);
+        }
 
     } catch (err) {
         console.error("GenAI Error:", err);
