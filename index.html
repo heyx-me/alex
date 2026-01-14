@@ -426,19 +426,19 @@
                     currentX = e.touches[0].clientX;
                     const diff = currentX - startX;
                     
-                    // Only allow swipe right
-                    if (diff > 0) {
+                    // Only allow swipe left
+                    if (diff < 0) {
                          element.style.transform = `translateX(${diff}px)`;
-                         element.style.opacity = 1 - (diff / (window.innerWidth * 0.8));
+                         element.style.opacity = 1 - (Math.abs(diff) / (window.innerWidth * 0.8));
                     }
                 }, { passive: true });
 
                 element.addEventListener('touchend', (e) => {
                     if (!activeSwipeEl || activeSwipeEl !== element) return;
                     element.classList.remove('swiping');
-                    const diff = currentX - startX; // Recalculate diff
+                    const diff = currentX - startX; 
                     
-                    if (diff > 100) { // Threshold
+                    if (diff < -100) { // Threshold for left swipe
                          triggerDelete(element, id);
                     } else {
                         // Reset
@@ -452,8 +452,8 @@
             }
             
             function triggerDelete(element, id) {
-                // Optimistic visual removal
-                element.style.transform = 'translateX(120%)';
+                // Optimistic visual removal to the left
+                element.style.transform = 'translateX(-120%)';
                 element.style.opacity = '0';
                 
                 // Wait for animation
