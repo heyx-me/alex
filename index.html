@@ -160,12 +160,68 @@
             background: rgba(255,255,255,0.1);
             border-radius: 3px;
         }
+
+        /* Snackbar */
+        #snackbar {
+            visibility: hidden;
+            min-width: 280px;
+            transform: translateX(-50%);
+            background-color: rgba(30, 30, 35, 0.95);
+            color: #fff;
+            border-radius: 12px;
+            padding: 14px 20px;
+            position: fixed;
+            z-index: 2000;
+            left: 50%;
+            bottom: 30px;
+            font-size: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            opacity: 0;
+            transition: all 0.3s ease-in-out;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(12px);
+        }
+
+        #snackbar.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 100px;
+        }
+
+        #snackbar button {
+            background: none;
+            border: none;
+            color: #00ffff;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            margin-left: 20px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        
+        #snackbar button:hover {
+            background: rgba(0, 255, 255, 0.1);
+        }
+
+        .message {
+            /* Ensure transforms work */
+            touch-action: pan-y; 
+            user-select: none;
+            position: relative;
+            will-change: transform, opacity;
+        }
     </style>
 </head>
 <body>
     <div id="three-container"></div>
     
     <div id="chat-interface">
+        <div id="snackbar">Message deleted<button id="undo-btn">UNDO</button></div>
         <div class="chat-window">
             <div id="messages">
                 <!-- Messages will appear here -->
@@ -343,8 +399,113 @@
             const form = document.getElementById('chat-form');
             const input = document.getElementById('message-input');
             const sendBtn = document.getElementById('send-btn');
+            const snackbar = document.getElementById('snackbar');
+            const undoBtn = document.getElementById('undo-btn');
             
             let userId = null;
+            let pendingDelete = null; // { id, element, timeout }
+
+            // --- Swipe Logic ---
+            let startX = 0;
+            let currentX = 0;
+            let activeSwipeEl = null;
+
+            function attachSwipe(element, id) {
+                if (!id) return; 
+                element.dataset.id = id;
+                
+                element.addEventListener('touchstart', (e) => {
+                    if (pendingDelete) return;
+                    startX = e.touches[0].clientX;
+                    activeSwipeEl = element;
+                    element.classList.add('swiping');
+                }, { passive: true });
+
+                element.addEventListener('touchmove', (e) => {
+                    if (!activeSwipeEl || activeSwipeEl !== element) return;
+                    currentX = e.touches[0].clientX;
+                    const diff = currentX - startX;
+                    
+                    // Only allow swipe right
+                    if (diff > 0) {
+                         element.style.transform = `translateX(${diff}px)`;
+                         element.style.opacity = 1 - (diff / (window.innerWidth * 0.8));
+                    }
+                }, { passive: true });
+
+                element.addEventListener('touchend', (e) => {
+                    if (!activeSwipeEl || activeSwipeEl !== element) return;
+                    element.classList.remove('swiping');
+                    const diff = currentX - startX; // Recalculate diff
+                    
+                    if (diff > 100) { // Threshold
+                         triggerDelete(element, id);
+                    } else {
+                        // Reset
+                        element.style.transform = '';
+                        element.style.opacity = '';
+                    }
+                    activeSwipeEl = null;
+                    startX = 0;
+                    currentX = 0;
+                });
+            }
+            
+            function triggerDelete(element, id) {
+                // Optimistic visual removal
+                element.style.transform = 'translateX(120%)';
+                element.style.opacity = '0';
+                
+                // Wait for animation
+                setTimeout(() => {
+                    element.style.display = 'none';
+                    showUndoSnackbar(id, element);
+                }, 200);
+            }
+
+            function showUndoSnackbar(id, element) {
+                // If previous pending, finalize it immediately
+                if (pendingDelete) {
+                    finalizeDelete(pendingDelete.id);
+                    clearTimeout(pendingDelete.timeout);
+                }
+
+                snackbar.classList.add('show');
+                
+                const timeout = setTimeout(() => {
+                    finalizeDelete(id);
+                    snackbar.classList.remove('show');
+                    pendingDelete = null;
+                }, 4000);
+
+                pendingDelete = { id, element, timeout };
+            }
+
+            undoBtn.onclick = () => {
+                if (pendingDelete) {
+                    clearTimeout(pendingDelete.timeout);
+                    const { element } = pendingDelete;
+                    
+                    // Restore
+                    element.style.display = 'block';
+                    // Force reflow
+                    element.offsetHeight; 
+                    element.style.transform = '';
+                    element.style.opacity = '';
+                    
+                    snackbar.classList.remove('show');
+                    pendingDelete = null;
+                }
+            };
+
+            async function finalizeDelete(id) {
+                if (id === 'welcome-msg') return; // Don't delete local welcome
+                console.log('Deleting message:', id);
+                const { error } = await supabase.from('messages').delete().eq('id', id);
+                if (error) console.error('Delete error:', error);
+            }
+
+            // --- Auth & Init ---
 
             // 1. Authenticate (Anonymous)
             try {
@@ -380,21 +541,20 @@
                     filter: `conversation_id=eq.${userId}` 
                 }, (payload) => {
                     const msg = payload.new;
-                    // In case we receive our own message via subscription (duplicate check usually handled by optimistic UI, but here we just append if it's not us or if we want to be sure)
-                    // The old logic just called appendMessage.
-                    // We will check if it's already there? No, simple append.
-                    // But we do optimistic update. So let's avoid duplicating our own if possible.
-                    // Actually, the old logic didn't do optimistic updates explicitly in the `subscribeToMessages` function, 
-                    // BUT `sendMessage` in old code did NOT append to UI, it just inserted. 
-                    // So subscription handled the UI update for own messages too? 
-                    // Wait, looking at old code: `sendMessage` did NOT append. `subscribeToMessages` appended everything.
-                    // I should probably follow that pattern for simplicity or adapt to optimistic.
-                    // I'll stick to: Optimistic append for me, and ignore my own ID in subscription? 
-                    // Or just let subscription handle it? Subscription is slower.
-                    // I will do: Optimistic append for me. Ignore 'INSERT' if sender_id === me.
-                    
                     if (msg.sender_id !== userId) {
-                        appendMessage('bot', msg.content);
+                        appendMessage('bot', msg.content, msg.id);
+                    }
+                })
+                .on('postgres_changes', {
+                    event: 'DELETE',
+                    schema: 'public',
+                    table: 'messages',
+                    filter: `conversation_id=eq.${userId}` 
+                }, (payload) => {
+                    const deletedId = payload.old.id;
+                    const el = document.querySelector(`.message[data-id="${deletedId}"]`);
+                    if (el && (!pendingDelete || pendingDelete.id !== deletedId)) {
+                        el.remove();
                     }
                 })
                 .subscribe();
@@ -406,19 +566,22 @@
                 if (!text) return;
 
                 input.value = '';
-                appendMessage('user', text); // Optimistic
+                const tempEl = appendMessage('user', text);
 
-                const { error } = await supabase.from('messages').insert({
+                const { data, error } = await supabase.from('messages').insert({
                     room_id: ROOM_ID,
                     conversation_id: userId,
                     sender_id: userId,
                     content: text,
                     is_bot: false
-                });
+                }).select();
 
                 if (error) {
                     console.error('Error sending:', error);
-                    appendMessage('system', 'Error sending message.');
+                    tempEl.textContent += ' (Error)';
+                } else if (data && data.length > 0) {
+                    // Attach swipe now that we have ID
+                    attachSwipe(tempEl, data[0].id);
                 }
             });
 
@@ -436,30 +599,29 @@
                 }
 
                 if (data && data.length > 0) {
-                    // Clear "Hello" placeholder if we have history? 
-                    // My HTML has a hardcoded "Hello". I should probably clear it or keep it as start.
-                    // I'll clear the container first.
                     messagesDiv.innerHTML = '';
                     data.forEach(msg => {
                         const role = msg.sender_id === userId ? 'user' : 'bot';
-                        appendMessage(role, msg.content);
+                        appendMessage(role, msg.content, msg.id);
                     });
                 } else {
-                    // If no history, show greeting
                     if (messagesDiv.children.length === 0) {
-                        appendMessage('bot', 'Hello! I am Alex. How can I help you?');
+                        appendMessage('bot', 'Hello! I am Alex. How can I help you?', 'welcome-msg');
                     }
                 }
             }
 
-            function appendMessage(role, text) {
+            function appendMessage(role, text, id = null) {
                 const div = document.createElement('div');
-                // Map 'system' to 'bot' style but maybe different? Just use 'bot' for now.
                 const styleRole = role === 'system' ? 'bot' : role;
                 div.className = `message ${styleRole}`;
                 div.textContent = text;
+                if (id) {
+                    attachSwipe(div, id);
+                }
                 messagesDiv.appendChild(div);
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                return div;
             }
         }
 
