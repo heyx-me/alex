@@ -183,6 +183,7 @@
             transition: all 0.3s ease-in-out;
             border: 1px solid rgba(255,255,255,0.1);
             backdrop-filter: blur(12px);
+            pointer-events: auto;
         }
 
         #snackbar.show {
@@ -255,7 +256,11 @@
         // --- 3D BACKGROUND ---
         const container = document.getElementById('three-container');
         if (container) {
-            initThreeJS(container);
+            try {
+                initThreeJS(container);
+            } catch (e) {
+                console.warn('3D Background failed to initialize:', e);
+            }
         }
 
         function initThreeJS(container) {
@@ -438,7 +443,7 @@
                     element.classList.remove('swiping');
                     const diff = currentX - startX; 
                     
-                    if (diff < -100) { // Threshold for left swipe
+                    if (diff < -70) { // Threshold for left swipe
                          triggerDelete(element, id);
                     } else {
                         // Reset

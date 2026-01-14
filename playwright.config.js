@@ -14,7 +14,13 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { 
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          executablePath: '/data/data/com.termux/files/usr/bin/chromium-browser',
+          args: ['--no-sandbox', '--disable-gpu'] // Often needed in restricted envs
+        }
+      },
     },
   ],
 });
