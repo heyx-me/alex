@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chat | heyx-me</title>
-    <meta name="theme-color" content="#030305">
+    <title>3D Background</title>
     <style>
         html, body {
             height: 100%;
@@ -12,8 +11,7 @@
             overflow: hidden;
             background-color: #030305;
             margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            color: white;
+            padding: 0;
         }
         #three-container {
             position: fixed;
@@ -23,225 +21,16 @@
             height: 100vh;
             z-index: 0;
         }
-        
-        /* Chat UI */
-        #chat-interface {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            pointer-events: none; /* Let clicks pass through to 3D bg where empty */
-        }
-
-        .chat-window {
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-            height: 100%;
-            max-height: 100%;
-            display: flex;
-            flex-direction: column;
-            pointer-events: auto;
-            background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 20%, rgba(0,0,0,0.8) 100%);
-        }
-
-        #messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            scroll-behavior: smooth;
-            -webkit-mask-image: linear-gradient(to bottom, transparent, black 5%);
-            mask-image: linear-gradient(to bottom, transparent, black 5%);
-        }
-
-        .message {
-            max-width: 80%;
-            padding: 10px 14px;
-            border-radius: 18px;
-            font-size: 15px;
-            line-height: 1.4;
-            backdrop-filter: blur(8px);
-            animation: fadeIn 0.3s ease-out;
-            word-wrap: break-word;
-        }
-
-        .message.user {
-            align-self: flex-end;
-            background: rgba(0, 255, 255, 0.1);
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            color: #e0ffff;
-            border-bottom-right-radius: 4px;
-        }
-
-        .message.bot {
-            align-self: flex-start;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #f0f0f0;
-            border-bottom-left-radius: 4px;
-        }
-
-        .input-area {
-            padding: 20px;
-            display: flex;
-            gap: 10px;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-
-        input[type="text"] {
-            flex: 1;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 24px;
-            padding: 12px 20px;
-            color: white;
-            font-size: 16px;
-            outline: none;
-            transition: all 0.2s;
-        }
-
-        input[type="text"]:focus {
-            background: rgba(255,255,255,0.15);
-            border-color: rgba(0, 255, 255, 0.5);
-        }
-
-        button#send-btn {
-            background: rgba(0, 255, 255, 0.2);
-            border: 1px solid rgba(0, 255, 255, 0.4);
-            color: #00ffff;
-            border-radius: 50%;
-            width: 48px;
-            height: 48px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        button#send-btn:hover {
-            background: rgba(0, 255, 255, 0.3);
-            transform: scale(1.05);
-        }
-        
-        button#send-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        button#send-btn svg {
-            width: 20px;
-            height: 20px;
-            fill: currentColor;
-            margin-left: 2px;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Scrollbar */
-        #messages::-webkit-scrollbar {
-            width: 6px;
-        }
-        #messages::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.1);
-            border-radius: 3px;
-        }
-
-        /* Snackbar */
-        #snackbar {
-            visibility: hidden;
-            min-width: 280px;
-            transform: translateX(-50%);
-            background-color: rgba(30, 30, 35, 0.95);
-            color: #fff;
-            border-radius: 12px;
-            padding: 14px 20px;
-            position: fixed;
-            z-index: 2000;
-            left: 50%;
-            bottom: 30px;
-            font-size: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-            opacity: 0;
-            transition: all 0.3s ease-in-out;
-            border: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(12px);
-            pointer-events: auto;
-        }
-
-        #snackbar.show {
-            visibility: visible;
-            opacity: 1;
-            bottom: 100px;
-        }
-
-        #snackbar button {
-            background: none;
-            border: none;
-            color: #00ffff;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 15px;
-            margin-left: 20px;
-            padding: 4px 8px;
-            border-radius: 4px;
-            transition: background 0.2s;
-        }
-        
-        #snackbar button:hover {
-            background: rgba(0, 255, 255, 0.1);
-        }
-
-        .message {
-            /* Ensure transforms work */
-            touch-action: pan-y; 
-            user-select: none;
-            position: relative;
-            will-change: transform, opacity;
-        }
     </style>
 </head>
 <body>
     <div id="three-container"></div>
-    
-    <div id="chat-interface">
-        <div id="snackbar">Message deleted<button id="undo-btn">UNDO</button></div>
-        <div class="chat-window">
-            <div id="messages">
-                <!-- Messages will appear here -->
-            </div>
-            <form id="chat-form" class="input-area">
-                <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
-                <button type="submit" id="send-btn">
-                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
-                </button>
-            </form>
-        </div>
-    </div>
 
     <script type="importmap">
     {
         "imports": {
             "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-            "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
         }
     }
     </script>
@@ -251,387 +40,172 @@
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-        import { createClient } from '@supabase/supabase-js';
 
-        // --- 3D BACKGROUND ---
         const container = document.getElementById('three-container');
-        if (container) {
-            try {
-                initThreeJS(container);
-            } catch (e) {
-                console.warn('3D Background failed to initialize:', e);
-            }
-        }
 
-        function initThreeJS(container) {
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 8;
+        // Scene Setup
+        const scene = new THREE.Scene();
+        // Add some fog for depth
+        scene.fog = new THREE.FogExp2(0x030305, 0.02);
 
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            container.appendChild(renderer.domElement);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 8;
 
-            const renderScene = new RenderPass(scene, camera);
-            const bloomPass = new UnrealBloomPass(
-                new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.1
-            );
-            
-            const composer = new EffectComposer(renderer);
-            composer.addPass(renderScene);
-            composer.addPass(bloomPass);
-            composer.addPass(new OutputPass());
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap pixel ratio for performance
+        container.appendChild(renderer.domElement);
 
-            function createTrail(color, xOffset, thickness = 0.015) {
-                const points = [];
-                for (let i = 0; i < 100; i++) {
-                    points.push(new THREE.Vector3(
-                        Math.sin(i * 0.4 + xOffset) * 1.5,
-                        i * 0.8 - 40,
-                        Math.cos(i * 0.4 + xOffset) * 1.5
-                    ));
-                }
-                const curve = new THREE.CatmullRomCurve3(points);
-                const tubeGeom = new THREE.TubeGeometry(curve, 400, thickness, 8, false);
-                const tubeMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.3 });
-                const tube = new THREE.Mesh(tubeGeom, tubeMat);
-                scene.add(tube);
-                return tube;
-            }
-
-            const trail1 = createTrail(0x00ffff, 0);
-            const trail2 = createTrail(0xff00ff, Math.PI);
-            const trail3 = createTrail(0x00ffff, Math.PI * 0.5, 0.005);
-            const trail4 = createTrail(0xff00ff, Math.PI * 1.5, 0.005);
-
-            const starGeo = new THREE.BufferGeometry();
-            const starPos = [];
-            for(let i=0; i<3000; i++) {
-                starPos.push((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100);
-            }
-            starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
-            const starMat = new THREE.PointsMaterial({ color: 0x888888, size: 0.12 });
-            const stars = new THREE.Points(starGeo, starMat);
-            scene.add(stars);
-
-            let lastScrollTop = 0;
-            const messagesDiv = document.getElementById('messages');
-
-            function animate() {
-                requestAnimationFrame(animate);
-
-                // Scroll interaction
-                const currentScrollTop = messagesDiv ? messagesDiv.scrollTop : 0;
-                const scrollDelta = currentScrollTop - lastScrollTop;
-                lastScrollTop = currentScrollTop;
-
-                // Move trails (Foreground - Faster)
-                const trailSpeed = 0.01;
-                const trailMove = scrollDelta * trailSpeed;
-                
-                [trail1, trail2, trail3, trail4].forEach(trail => {
-                    trail.position.y += trailMove;
-                    // Wrap trails
-                    // Height is approx 80 (100 points * 0.8). 
-                    // Reset if moved too far.
-                    if (trail.position.y > 40) trail.position.y -= 80;
-                    if (trail.position.y < -40) trail.position.y += 80;
-                    
-                    // Rotate trails
-                    if (trail === trail1) trail.rotation.y += 0.001;
-                    if (trail === trail2) trail.rotation.y -= 0.001;
-                    if (trail === trail3) trail.rotation.y += 0.0015;
-                    if (trail === trail4) trail.rotation.y -= 0.0015;
-                });
-
-
-                // Orbiting stars with parallax & Scroll
-                const positions = stars.geometry.attributes.position.array;
-                const starScrollSpeed = 0.002; // Background - Slower
-                const starMove = scrollDelta * starScrollSpeed;
-
-                for(let i = 0; i < positions.length; i += 3) {
-                    let x = positions[i];
-                    let y = positions[i+1];
-                    let z = positions[i+2];
-
-                    // Vertical scroll movement
-                    y += starMove;
-                    
-                    // Wrap stars Y
-                    if (y > 50) y -= 100;
-                    if (y < -50) y += 100;
-                    
-                    positions[i+1] = y;
-
-                    // Calculate angular speed based on depth (z)
-                    // Even slower, very subtle orbit speed
-                    const angleSpeed = 0.0001 + ((z + 50) / 100) * 0.0003;
-
-                    const cos = Math.cos(angleSpeed);
-                    const sin = Math.sin(angleSpeed);
-
-                    // Rotate around Y-axis
-                    positions[i] = x * cos - z * sin;
-                    positions[i+2] = x * sin + z * cos;
-                }
-                stars.geometry.attributes.position.needsUpdate = true;
-
-                composer.render();
-            }
-
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                composer.setSize(window.innerWidth, window.innerHeight);
-            });
-
-            animate();
-        }
-
-        // --- CHAT LOGIC (Restored & Adapted) ---
+        // Post Processing
+        const renderScene = new RenderPass(scene, camera);
         
-        const SUPABASE_URL = 'https://gsyozgedljmcpsysstpz.supabase.co';
-        // Key retrieved from previous commit 8b720b0f
-        const SUPABASE_ANON_KEY = 'sb_publishable_FJI1hrANejiwsKll-G4zMQ_wRR-Surp';
-        const ROOM_ID = 'alex';
+        // Bloom Parameters: resolution, strength, radius, threshold
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight), 
+            1.5,  // Strength
+            0.4,  // Radius
+            0.1   // Threshold
+        );
+        
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+        composer.addPass(new OutputPass());
 
-        async function initChat() {
-            const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            const messagesDiv = document.getElementById('messages');
-            const form = document.getElementById('chat-form');
-            const input = document.getElementById('message-input');
-            const sendBtn = document.getElementById('send-btn');
-            const snackbar = document.getElementById('snackbar');
-            const undoBtn = document.getElementById('undo-btn');
+        // --- NEON TRAILS ---
+        function createTrail(color, xOffset, thickness = 0.02) {
+            const points = [];
+            const segments = 100;
+            const heightRange = 80; // Total height of the spiral
             
-            let userId = null;
-            let pendingDelete = null; // { id, element, timeout }
+            for (let i = 0; i < segments; i++) {
+                // Create a spiral path
+                const t = i / segments; 
+                const angle = t * Math.PI * 8 + xOffset; // 4 full rotations
+                const y = (t - 0.5) * heightRange;
+                const radius = 1.5 + Math.sin(t * Math.PI * 4) * 0.2; // Slight wobble in radius
 
-            // --- Swipe Logic ---
-            let startX = 0;
-            let currentX = 0;
-            let activeSwipeEl = null;
-
-            function attachSwipe(element, id) {
-                if (!id) return; 
-                element.dataset.id = id;
-                
-                element.addEventListener('touchstart', (e) => {
-                    if (pendingDelete) return;
-                    startX = e.touches[0].clientX;
-                    activeSwipeEl = element;
-                    element.classList.add('swiping');
-                }, { passive: true });
-
-                element.addEventListener('touchmove', (e) => {
-                    if (!activeSwipeEl || activeSwipeEl !== element) return;
-                    currentX = e.touches[0].clientX;
-                    const diff = currentX - startX;
-                    
-                    // Only allow swipe left
-                    if (diff < 0) {
-                         element.style.transform = `translateX(${diff}px)`;
-                         element.style.opacity = 1 - (Math.abs(diff) / (window.innerWidth * 0.8));
-                    }
-                }, { passive: true });
-
-                element.addEventListener('touchend', (e) => {
-                    if (!activeSwipeEl || activeSwipeEl !== element) return;
-                    element.classList.remove('swiping');
-                    const diff = currentX - startX; 
-                    
-                    if (diff < -70) { // Threshold for left swipe
-                         triggerDelete(element, id);
-                    } else {
-                        // Reset
-                        element.style.transform = '';
-                        element.style.opacity = '';
-                    }
-                    activeSwipeEl = null;
-                    startX = 0;
-                    currentX = 0;
-                });
+                points.push(new THREE.Vector3(
+                    Math.sin(angle) * radius,
+                    y,
+                    Math.cos(angle) * radius
+                ));
             }
             
-            function triggerDelete(element, id) {
-                // Optimistic visual removal to the left
-                element.style.transform = 'translateX(-120%)';
-                element.style.opacity = '0';
-                
-                // Wait for animation
-                setTimeout(() => {
-                    element.style.display = 'none';
-                    showUndoSnackbar(id, element);
-                }, 200);
-            }
-
-            function showUndoSnackbar(id, element) {
-                // If previous pending, finalize it immediately
-                if (pendingDelete) {
-                    finalizeDelete(pendingDelete.id);
-                    clearTimeout(pendingDelete.timeout);
-                }
-
-                snackbar.classList.add('show');
-                
-                const timeout = setTimeout(() => {
-                    finalizeDelete(id);
-                    snackbar.classList.remove('show');
-                    pendingDelete = null;
-                }, 4000);
-
-                pendingDelete = { id, element, timeout };
-            }
-
-            undoBtn.onclick = () => {
-                if (pendingDelete) {
-                    clearTimeout(pendingDelete.timeout);
-                    const { element } = pendingDelete;
-                    
-                    // Restore
-                    element.style.display = 'block';
-                    // Force reflow
-                    element.offsetHeight; 
-                    element.style.transform = '';
-                    element.style.opacity = '';
-                    
-                    snackbar.classList.remove('show');
-                    pendingDelete = null;
-                }
-            };
-
-            async function finalizeDelete(id) {
-                if (id === 'welcome-msg') return; // Don't delete local welcome
-                console.log('Deleting message:', id);
-                const { error } = await supabase.from('messages').delete().eq('id', id);
-                if (error) console.error('Delete error:', error);
-            }
-
-            // --- Auth & Init ---
-
-            // 1. Authenticate (Anonymous)
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                
-                if (session) {
-                    console.log('Restored session');
-                    userId = session.user.id;
-                } else {
-                    console.log('Signing in anonymously...');
-                    const { data, error } = await supabase.auth.signInAnonymously();
-                    if (error) throw error;
-                    userId = data.user.id;
-                }
-                console.log('Authenticated as:', userId);
-            } catch (err) {
-                console.error('Auth Error:', err);
-                appendMessage('system', 'Error: Could not authenticate. Chat unavailable.');
-                input.disabled = true;
-                sendBtn.disabled = true;
-                return;
-            }
-
-            // 2. Load History
-            await loadHistory();
-
-            // 3. Subscribe
-            supabase.channel('public:messages')
-                .on('postgres_changes', { 
-                    event: 'INSERT', 
-                    schema: 'public', 
-                    table: 'messages', 
-                    filter: `conversation_id=eq.${userId}` 
-                }, (payload) => {
-                    const msg = payload.new;
-                    if (msg.sender_id !== userId) {
-                        appendMessage('bot', msg.content, msg.id);
-                    }
-                })
-                .on('postgres_changes', {
-                    event: 'DELETE',
-                    schema: 'public',
-                    table: 'messages',
-                    filter: `conversation_id=eq.${userId}` 
-                }, (payload) => {
-                    const deletedId = payload.old.id;
-                    const el = document.querySelector(`.message[data-id="${deletedId}"]`);
-                    if (el && (!pendingDelete || pendingDelete.id !== deletedId)) {
-                        el.remove();
-                    }
-                })
-                .subscribe();
-
-            // 4. Handle Send
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const text = input.value.trim();
-                if (!text) return;
-
-                input.value = '';
-                const tempEl = appendMessage('user', text);
-
-                const { data, error } = await supabase.from('messages').insert({
-                    room_id: ROOM_ID,
-                    conversation_id: userId,
-                    sender_id: userId,
-                    content: text,
-                    is_bot: false
-                }).select();
-
-                if (error) {
-                    console.error('Error sending:', error);
-                    tempEl.textContent += ' (Error)';
-                } else if (data && data.length > 0) {
-                    // Attach swipe now that we have ID
-                    attachSwipe(tempEl, data[0].id);
-                }
+            const curve = new THREE.CatmullRomCurve3(points);
+            const tubeGeom = new THREE.TubeGeometry(curve, 400, thickness, 8, false);
+            const tubeMat = new THREE.MeshBasicMaterial({ 
+                color: color, 
+                transparent: true, 
+                opacity: 0.4 
             });
-
-            async function loadHistory() {
-                const { data, error } = await supabase
-                    .from('messages')
-                    .select('*')
-                    .eq('room_id', ROOM_ID)
-                    .eq('conversation_id', userId)
-                    .order('created_at', { ascending: true });
-
-                if (error) {
-                    console.error('Error loading history:', error);
-                    return;
-                }
-
-                if (data && data.length > 0) {
-                    messagesDiv.innerHTML = '';
-                    data.forEach(msg => {
-                        const role = msg.sender_id === userId ? 'user' : 'bot';
-                        appendMessage(role, msg.content, msg.id);
-                    });
-                } else {
-                    if (messagesDiv.children.length === 0) {
-                        appendMessage('bot', 'Hello! I am Alex. How can I help you?', 'welcome-msg');
-                    }
-                }
-            }
-
-            function appendMessage(role, text, id = null) {
-                const div = document.createElement('div');
-                const styleRole = role === 'system' ? 'bot' : role;
-                div.className = `message ${styleRole}`;
-                div.textContent = text;
-                if (id) {
-                    attachSwipe(div, id);
-                }
-                messagesDiv.appendChild(div);
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                return div;
-            }
+            const tube = new THREE.Mesh(tubeGeom, tubeMat);
+            scene.add(tube);
+            return tube;
         }
 
-        initChat();
+        const trail1 = createTrail(0x00ffff, 0);                 // Cyan
+        const trail2 = createTrail(0xff00ff, Math.PI);           // Magenta
+        const trail3 = createTrail(0x00ffff, Math.PI * 0.5, 0.01); // Cyan thin
+        const trail4 = createTrail(0xff00ff, Math.PI * 1.5, 0.01); // Magenta thin
 
+        // --- STARFIELD ---
+        const starGeo = new THREE.BufferGeometry();
+        const starCount = 3000;
+        const starPos = new Float32Array(starCount * 3);
+        
+        for(let i = 0; i < starCount * 3; i += 3) {
+            starPos[i] = (Math.random() - 0.5) * 100;     // x
+            starPos[i+1] = (Math.random() - 0.5) * 100;   // y
+            starPos[i+2] = (Math.random() - 0.5) * 60 - 10; // z (mostly in background)
+        }
+        
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        const starMat = new THREE.PointsMaterial({ 
+            color: 0x888888, 
+            size: 0.15,
+            transparent: true,
+            opacity: 0.8,
+            sizeAttenuation: true
+        });
+        const stars = new THREE.Points(starGeo, starMat);
+        scene.add(stars);
+
+        // --- ANIMATION ---
+        const clock = new THREE.Clock();
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime();
+
+            // 1. Move Trails (Simulate vertical passage)
+            // Instead of scrolling, we just rotate them and shift texture/position slightly
+            // or just rotate the whole group. Let's rotate individual trails for the helix effect.
+            
+            const rotationSpeed = 0.2;
+            const moveSpeed = 2.0;
+
+            [trail1, trail2, trail3, trail4].forEach((trail, index) => {
+                // Rotate around Y axis
+                trail.rotation.y += rotationSpeed * delta * (index % 2 === 0 ? 1 : -1);
+                
+                // Bobbing / "Breathing" effect
+                trail.scale.x = 1 + Math.sin(time * 0.5 + index) * 0.05;
+                trail.scale.z = 1 + Math.sin(time * 0.5 + index) * 0.05;
+            });
+
+            // 2. Move Stars (Parallax / Warp effect)
+            const positions = stars.geometry.attributes.position.array;
+            const starSpeed = 2.0 * delta;
+
+            for(let i = 0; i < starCount * 3; i += 3) {
+                // Move stars upwards (simulating descent) or downwards
+                let y = positions[i+1];
+                y -= starSpeed;
+                
+                // Wrap around
+                if (y < -50) {
+                    y = 50;
+                    // Reset X/Z randomly when wrapping to avoid patterns
+                    positions[i] = (Math.random() - 0.5) * 100;
+                    positions[i+2] = (Math.random() - 0.5) * 60 - 10;
+                }
+                positions[i+1] = y;
+
+                // Subtle rotation for stars too
+                const x = positions[i];
+                const z = positions[i+2];
+                const angle = 0.05 * delta;
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+                
+                // Rotate around Y
+                positions[i] = x * cos - z * sin;
+                positions[i+2] = x * sin + z * cos;
+            }
+            
+            stars.geometry.attributes.position.needsUpdate = true;
+
+            // 3. Camera Movement (Subtle sway)
+            camera.position.x = Math.sin(time * 0.2) * 0.5;
+            camera.position.y = Math.cos(time * 0.3) * 0.5;
+            camera.lookAt(0, 0, 0);
+
+            composer.render();
+        }
+
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+            bloomPass.resolution.set(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
     </script>
 </body>
 </html>
