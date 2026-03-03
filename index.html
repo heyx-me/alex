@@ -3,36 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>3D Cosmic Game - Orbital Pursuit</title>
+    <title>3D Cosmic Game - Perfect Glide</title>
     <style>
-        html { background-color: #030305; height: 100%; width: 100%; }
-        body {
-            margin: 0; padding: 0; height: 100%; width: 100%;
-            overflow-x: hidden; overflow-y: auto; scrollbar-width: none;
-            background: transparent; -webkit-overflow-scrolling: touch;
-        }
-        body::-webkit-scrollbar { display: none; }
-        #three-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
-        #scroll-proxy { position: relative; height: 100000vh; width: 100%; z-index: 1; pointer-events: auto; }
-        #ui-overlay {
-            position: fixed; top: 20px; left: 20px; color: white;
-            font-family: 'Segoe UI', Arial, sans-serif; font-size: 24px;
-            text-shadow: 0 0 10px rgba(0,255,255,0.8); pointer-events: none; z-index: 2;
-        }
+        html, body { background: #030305; margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; }
+        body { touch-action: none; }
+        #three-container { position: fixed; inset: 0; z-index: 0; }
+        #ui-overlay { position: fixed; top: 20px; left: 20px; color: white; font: 24px Arial; text-shadow: 0 0 10px #0ff; z-index: 2; pointer-events: none; }
     </style>
 </head>
 <body>
     <div id="ui-overlay">SCORE: <span id="score">0</span></div>
     <div id="three-container"></div>
-    <div id="scroll-proxy"></div>
 
     <script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-        }
-    }
+    { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
     </script>
     <script type="module">
         import * as THREE from 'three';
@@ -41,258 +25,210 @@
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-        const container = document.getElementById('three-container');
-        const scoreEl = document.getElementById('score');
-        let score = 0;
+        const scoreEl = document.getElementById('score'), WORLD_H = 150;
+        let score = 0, scrollY = 0, targetScrollY = 0, autoTime = 0;
 
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x030305, 0.012);
-
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 15; 
+        camera.position.z = 15;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
-
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-        scene.add(ambientLight);
-
-        const mainLight = new THREE.PointLight(0xffffff, 100, 100);
-        mainLight.position.set(0, 0, 15);
-        scene.add(mainLight);
+        document.getElementById('three-container').appendChild(renderer.domElement);
 
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
         composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.6, 0.4, 0.3));
         composer.addPass(new OutputPass());
 
-        const WORLD_HEIGHT = 150; 
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        const light = new THREE.PointLight(0xffffff, 100, 100); light.position.set(0, 0, 15); scene.add(light);
 
-        function createStars() {
-            const starCount = 2000;
-            const starPos = new Float32Array(starCount * 3);
-            for(let i = 0; i < starCount * 3; i += 3) {
-                starPos[i] = (Math.random() - 0.5) * 200;
-                starPos[i+1] = (Math.random() - 0.5) * WORLD_HEIGHT; 
-                starPos[i+2] = (Math.random() - 0.5) * 100 - 30;
-            }
-            const geom = new THREE.BufferGeometry();
-            geom.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-            return new THREE.Points(geom, new THREE.PointsMaterial({ color: 0xffffff, size: 0.1, transparent: true, opacity: 0.4 }));
-        }
-        const stars1 = createStars();
-        const stars2 = stars1.clone();
-        scene.add(stars1, stars2);
+        const calcY = (offset, move) => ((offset + move) % WORLD_H + WORLD_H) % WORLD_H - (WORLD_H / 2);
 
-        const particles = [];
-        function createExplosion(pos, color) {
-            const count = 40;
-            const geom = new THREE.BufferGeometry();
-            const positions = new Float32Array(count * 3);
-            const vels = [];
-            for(let i = 0; i < count; i++) {
-                positions[i*3] = pos.x; positions[i*3+1] = pos.y; positions[i*3+2] = pos.z;
-                vels.push(new THREE.Vector3((Math.random()-0.5)*0.8, (Math.random()-0.5)*0.8, (Math.random()-0.5)*0.8));
-            }
-            geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            const points = new THREE.Points(geom, new THREE.PointsMaterial({ color, size: 0.2, transparent: true }));
-            scene.add(points);
-            particles.push({ mesh: points, vels, life: 1.0 });
-        }
+        const stars1 = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array(2000 * 3).map(() => (Math.random()-0.5)*200), 3)), new THREE.PointsMaterial({ color: 0xffffff, size: 0.1, transparent: true, opacity: 0.4 }));
+        const stars2 = stars1.clone(); scene.add(stars1, stars2);
 
-        const pyramids = [];
-        const pyramidColors = [0x00ffff, 0xff00ff, 0x00ffaa, 0xaa00ff];
+        const pyramids = [], pyramidColors = [0x00ffff, 0xff00ff, 0x00ffaa, 0xaa00ff];
         for (let i = 0; i < 6; i++) {
-            const group = new THREE.Group();
-            const geom = new THREE.ConeGeometry(1.8, 3, 4);
-            geom.rotateX(Math.PI / 2); 
-            const mat = new THREE.MeshPhongMaterial({ color: pyramidColors[i % 4], transparent: true, opacity: 0.4, flatShading: true, side: THREE.DoubleSide });
-            const mesh = new THREE.Mesh(geom, mat);
-            const wire = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color: pyramidColors[i % 4], wireframe: true, transparent: true, opacity: 0.2 }));
-            mesh.add(wire);
-            group.add(mesh);
-            scene.add(group);
-            
+            const g = new THREE.Group(), geom = new THREE.ConeGeometry(1.8, 3, 4); geom.rotateX(Math.PI/2);
+            const m = new THREE.Mesh(geom, new THREE.MeshPhongMaterial({ color: pyramidColors[i%4], transparent: true, opacity: 0.4, flatShading: true, side: 2 }));
+            m.add(new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color: pyramidColors[i%4], wireframe: true, transparent: true, opacity: 0.2 })));
+            g.add(m); scene.add(g);
             pyramids.push({ 
-                container: group, mesh, 
-                yOffset: (i / 6) * WORLD_HEIGHT, 
-                phase: Math.random() * Math.PI * 2,
-                ampX: 5.0 + Math.random() * 3.0,
-                ampZ: 3.0 + Math.random() * 2.0,
-                freq: 1.0 + Math.random() * 0.5,
-                color: pyramidColors[i % 4], 
-                smoothLookTarget: new THREE.Vector3(),
-                attractionOffset: new THREE.Vector3(),
-                boostVelocity: 0,
-                accumulatedBoost: 0,
-                orbitDamping: 1.0 // 1 = circular, 0 = direct point
+                container: g, mesh: m, yOffset: (i/6)*WORLD_H, phase: Math.random()*Math.PI*2, 
+                ampX: 5+Math.random()*3, ampZ: 3+Math.random()*2, freq: 1+Math.random()*0.5, 
+                color: pyramidColors[i%4], lookPos: new THREE.Vector3(), 
+                bVel: 0, bAcc: 0, lockAlpha: 0, currentTarget: null, 
+                lockCooldown: 0, lastRelY: -1, lastTargetPos: new THREE.Vector3(),
+                lastPos: new THREE.Vector3()
             });
         }
 
         const rings = [];
         for (let i = 0; i < 8; i++) {
-            const ring = new THREE.Mesh(
-                new THREE.TorusGeometry(3.0, 0.1, 16, 32),
-                new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 })
-            );
-            scene.add(ring);
-            rings.push({ 
-                mesh: ring, id: "ring_" + i,
-                yOffset: (i / 8) * WORLD_HEIGHT, 
-                xPos: ((i % 4) - 1.5) * 4, 
-                zPos: (Math.random() - 0.5) * 4,
-                wrapCount: 0, 
-                hit: false,
-                capturedColor: null,
-                smoothLookTarget: new THREE.Vector3() 
-            });
+            const r = new THREE.Mesh(new THREE.TorusGeometry(3, 0.1, 16, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 }));
+            scene.add(r);
+            rings.push({ mesh: r, id: i, yOffset: (i/8)*WORLD_H, xPos: ((i%4)-1.5)*4, zPos: (Math.random()-0.5)*4, wrap: 0, hit: false, color: null, lookPos: new THREE.Vector3(), lockedBy: null });
         }
 
-        let scrollY = 0, targetScrollY = 0, autoTimeAccum = 0;
-        window.addEventListener('scroll', () => { targetScrollY = window.scrollY; }, { passive: true });
+        const particles = [];
+        const spawnExplosion = (pos, color) => {
+            const count = 40, geom = new THREE.BufferGeometry(), positions = new Float32Array(count * 3), vels = [];
+            for(let i=0; i<count; i++) { positions.set([pos.x, pos.y, pos.z], i*3); vels.push(new THREE.Vector3((Math.random()-0.5)*0.8, (Math.random()-0.5)*0.8, (Math.random()-0.5)*0.8)); }
+            geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const pts = new THREE.Points(geom, new THREE.PointsMaterial({ color, size: 0.2, transparent: true }));
+            scene.add(pts); particles.push({ pts, vels, life: 1 });
+        };
 
+        let lastTouchY = 0;
+        window.addEventListener('wheel', (e) => { targetScrollY += e.deltaY; }, { passive: true });
+        window.addEventListener('touchstart', (e) => { lastTouchY = e.touches[0].clientY; }, { passive: true });
+        window.addEventListener('touchmove', (e) => { 
+            const delta = lastTouchY - e.touches[0].clientY;
+            targetScrollY += delta * 2; lastTouchY = e.touches[0].clientY;
+        }, { passive: true });
         const clock = new THREE.Clock();
-        const v1 = new THREE.Vector3();
-        const v2 = new THREE.Vector3();
 
         function animate() {
             requestAnimationFrame(animate);
-            const delta = clock.getDelta(), time = clock.getElapsedTime();
+            const dt = clock.getDelta(), time = clock.getElapsedTime();
+            autoTime += dt * 5; scrollY += (targetScrollY - scrollY) * 0.05;
+            const move = autoTime + (scrollY * 0.015);
 
-            autoTimeAccum += delta * 5.0; 
-            scrollY += (targetScrollY - scrollY) * 0.05;
-            const movement = autoTimeAccum + (scrollY * 0.015);
+            stars1.position.y = (move * 0.2) % WORLD_H;
+            stars2.position.y = stars1.position.y - WORLD_H;
 
-            stars1.position.y = (movement * 0.2) % WORLD_HEIGHT;
-            stars2.position.y = (movement * 0.2) % WORLD_HEIGHT - WORLD_HEIGHT;
-
-            pyramids.forEach(p => {
-                p.accumulatedBoost += p.boostVelocity * delta;
-                p.boostVelocity *= 0.94;
-                if (p.boostVelocity < 0.1) p.boostVelocity = 0;
-
-                let y = ((p.yOffset + movement + p.accumulatedBoost) % WORLD_HEIGHT + WORLD_HEIGHT) % WORLD_HEIGHT - (WORLD_HEIGHT / 2);
-                p.container.position.y = y;
-                
-                // ORBITAL MOVEMENT
-                const angle = time * p.freq + p.phase;
-                let baseTargetX = Math.cos(angle) * p.ampX * p.orbitDamping;
-                let baseTargetZ = Math.sin(angle) * p.ampZ * p.orbitDamping;
-
-                // Target Search
-                let bestRing = null;
-                let minDist = Infinity;
-                rings.forEach(r => {
-                    r.mesh.getWorldPosition(v1);
-                    p.container.getWorldPosition(v2);
-                    const dy = v1.y - v2.y;
-                    if (dy > -5 && dy < 50 && r.capturedColor !== p.color) {
-                        const d = v1.distanceTo(v2);
-                        if (d < minDist) { minDist = d; bestRing = r; }
-                    }
-                });
-
-                if (bestRing) {
-                    bestRing.mesh.getWorldPosition(v1);
-                    const dyAbs = Math.abs(v1.y - p.container.position.y);
-                    
-                    // SLOW GAP CLOSURE (Magnetic suction weakened initially)
-                    const pullFactor = Math.pow(Math.max(0, 1.0 - dyAbs / 40.0), 2.0);
-                    const pull = pullFactor * 0.08; 
-                    
-                    p.attractionOffset.x += (v1.x - (baseTargetX + p.attractionOffset.x)) * pull;
-                    p.attractionOffset.z += (v1.z - (baseTargetZ + p.attractionOffset.z)) * pull;
-                    
-                    // DAMPEN ORBIT AS WE GET CLOSER
-                    p.orbitDamping = THREE.MathUtils.lerp(p.orbitDamping, 1.0 - pullFactor * 0.8, 0.05);
-
-                    p.smoothLookTarget.lerp(v1, 0.1);
-
-                    // Slingshot
-                    if (dyAbs < 1.5 && minDist < 2.0) {
-                        p.boostVelocity += 60.0 * delta; 
-                    }
-                } else {
-                    p.attractionOffset.lerp(new THREE.Vector3(), 0.02);
-                    p.orbitDamping = THREE.MathUtils.lerp(p.orbitDamping, 1.0, 0.02);
-                    v1.set(p.container.position.x, p.container.position.y + 10, p.container.position.z);
-                    p.smoothLookTarget.lerp(v1, 0.05);
-                }
-
-                p.container.position.x = baseTargetX + p.attractionOffset.x;
-                p.container.position.z = baseTargetZ + p.attractionOffset.z;
-                p.container.lookAt(p.smoothLookTarget);
-                p.mesh.rotation.z += 0.5 * delta;
-            });
-
+            // 1. UPDATE RINGS FIRST
             rings.forEach(r => {
-                let rawY = r.yOffset - movement;
-                let y = ((rawY % WORLD_HEIGHT) + WORLD_HEIGHT) % WORLD_HEIGHT - (WORLD_HEIGHT / 2);
-                const currentWrap = Math.floor(rawY / WORLD_HEIGHT);
-                if (currentWrap !== r.wrapCount) {
-                    r.hit = false; r.mesh.visible = true;
-                    r.mesh.material.color.set(0xffffff);
-                    r.mesh.material.opacity = 0.4;
-                    r.xPos = ((Math.random() * 4) - 2) * 4;
-                    r.zPos = (Math.random() - 0.5) * 6;
-                    r.wrapCount = currentWrap;
-                    r.capturedColor = null;
+                const rawY = r.yOffset - move;
+                r.mesh.position.y = ((rawY % WORLD_H) + WORLD_H) % WORLD_H - (WORLD_H / 2);
+                const curWrap = Math.floor(rawY / WORLD_H);
+                if (curWrap !== r.wrap) {
+                    r.hit = false; r.mesh.visible = true; r.mesh.material.color.set(0xffffff); r.mesh.material.opacity = 0.4;
+                    r.xPos = (Math.random()-0.5)*16; r.zPos = (Math.random()-0.5)*6; r.wrap = curWrap; r.color = null; r.lockedBy = null;
                 }
-                r.mesh.position.set(r.xPos, y, r.zPos);
-
-                if (!r.capturedColor) {
-                    let bestP = null; let minPD = Infinity;
-                    pyramids.forEach(p => {
+                
+                if (!r.color) {
+                    let bestP = null, minPD = Infinity;
+                    pyramids.forEach(p => { 
                         const d = r.mesh.position.distanceTo(p.container.position);
-                        if (d < minPD) { minPD = d; bestP = p; }
+                        const dy = r.mesh.position.y - p.container.position.y;
+                        if (dy > -10 && d < minPD) { minPD = d; bestP = p; }
                     });
-                    if (bestP) {
-                        const pull = Math.pow(Math.max(0, 1.0 - minPD / 45.0), 1.5) * 0.05;
+                    if (bestP && !r.lockedBy) {
+                        const pull = Math.pow(Math.max(0, 1 - minPD / 45), 1.5) * 0.05;
                         r.xPos += (bestP.container.position.x - r.xPos) * pull;
                         r.zPos += (bestP.container.position.z - r.zPos) * pull;
-                        r.smoothLookTarget.lerp(bestP.container.position, 0.08);
-                        r.mesh.lookAt(r.smoothLookTarget);
+                        r.lookPos.lerp(bestP.container.position, 0.1); r.mesh.lookAt(r.lookPos);
                     }
                 }
+                r.mesh.position.set(r.xPos, r.mesh.position.y, r.zPos);
+            });
 
-                if (Math.abs(y) < 15) {
-                    pyramids.forEach(p => {
-                        const dist = p.container.position.distanceTo(r.mesh.position);
-                        if (dist < 0.6) {
-                            if (r.capturedColor !== p.color) {
-                                r.mesh.material.color.set(p.color);
-                                r.mesh.material.opacity = 0.8; 
-                                r.capturedColor = p.color;
-                                if (!r.hit) { r.hit = true; score++; scoreEl.innerText = score; }
-                                createExplosion(r.mesh.position, p.color);
-                            }
+            // 2. UPDATE PYRAMIDS BASED ON UPDATED RINGS
+            pyramids.forEach(p => {
+                p.lastPos.copy(p.container.position);
+                p.bAcc += p.bVel * dt; p.bVel *= 0.94;
+                p.container.position.y = calcY(p.yOffset, move + p.bAcc);
+                const angle = time * p.freq + p.phase;
+                const orbitX = Math.cos(angle) * p.ampX, orbitZ = Math.sin(angle) * p.ampZ;
+
+                if (p.lockCooldown > 0) p.lockCooldown -= dt;
+
+                // Sticky target logic
+                if (p.currentTarget) {
+                    const dy = p.currentTarget.mesh.position.y - p.container.position.y;
+                    if (dy < -5 || dy > 45 || p.currentTarget.hit) {
+                        if (p.currentTarget.lockedBy === p) p.currentTarget.lockedBy = null;
+                        p.currentTarget = null; p.lockCooldown = 0.5;
+                    }
+                }
+                if (!p.currentTarget && p.lockCooldown <= 0) {
+                    let minD = Infinity;
+                    rings.forEach(r => {
+                        const dy = r.mesh.position.y - p.container.position.y;
+                        // Tightened targeting: only look at rings near or entering the viewport
+                        if (dy > 0 && dy < 25 && r.color !== p.color && !r.hit && Math.abs(r.mesh.position.y) < 20) {
+                            const d = r.mesh.position.distanceTo(p.container.position);
+                            if (d < minD) { minD = d; p.currentTarget = r; }
                         }
                     });
                 }
+
+                const target = p.currentTarget;
+
+                if (target) {
+                    const dy = target.mesh.position.y - p.container.position.y;
+                    // Slower, smoother alpha transition
+                    p.lockAlpha = THREE.MathUtils.lerp(p.lockAlpha, (dy < 25 && dy > -2) ? 1 : 0, 0.005);
+                    p.lastTargetPos.copy(target.mesh.position);
+                    p.lookPos.lerp(target.mesh.position, 0.015);
+                    
+                    if (p.lockAlpha > 0.7) target.lockedBy = p;
+                    else if (target.lockedBy === p) target.lockedBy = null;
+                    
+                    // Collision & Slingshot (Exact Crossing + Through Hole Filter)
+                    const relY = p.container.position.y - target.mesh.position.y;
+                    const passed = p.lastRelY < 0 && relY >= 0; // Negative to positive
+                    const isInView = Math.abs(target.mesh.position.y) < 14; 
+                    
+                    if (isInView && passed) {
+                        // Find distance at exact crossing moment via interpolation
+                        const t = Math.abs(p.lastRelY) / (Math.abs(p.lastRelY) + Math.abs(relY));
+                        const crossX = THREE.MathUtils.lerp(p.lastPos.x, p.container.position.x, t);
+                        const crossZ = THREE.MathUtils.lerp(p.lastPos.z, p.container.position.z, t);
+                        const distToCenter = Math.sqrt(Math.pow(crossX - target.mesh.position.x, 2) + Math.pow(crossZ - target.mesh.position.z, 2));
+
+                        if (distToCenter < 2.8) { // Hole is roughly radius 3.0
+                            if (target.color !== p.color) {
+                                target.mesh.material.color.set(p.color); target.mesh.material.opacity = 0.8; target.color = p.color;
+                                if (!target.hit) { target.hit = true; score++; scoreEl.innerText = score; }
+                                spawnExplosion(target.mesh.position, p.color);
+                                p.bVel += 70 * dt; 
+                                p.currentTarget = null; p.lockCooldown = 1.0; 
+                            }
+                        }
+                    }
+                    p.lastRelY = relY;
+                } else {
+                    p.lockAlpha = THREE.MathUtils.lerp(p.lockAlpha, 0, 0.005);
+                    p.lookPos.lerp(new THREE.Vector3(p.container.position.x, p.container.position.y + 10, p.container.position.z), 0.01);
+                    p.lastRelY = -1;
+                }
+
+                // Smoothly blend goal from last target back to orbit using fading lockAlpha
+                const goalX = THREE.MathUtils.lerp(orbitX, p.lastTargetPos.x, p.lockAlpha);
+                const goalZ = THREE.MathUtils.lerp(orbitZ, p.lastTargetPos.z, p.lockAlpha);
+
+                const dx = goalX - p.container.position.x;
+                const dz = goalZ - p.container.position.z;
+                const dist = Math.sqrt(dx * dx + dz * dz);
+                if (dist > 0.001) {
+                    // Capped movement speed with slow-start easing
+                    const maxSpeed = 8 * dt; 
+                    const moveAmt = Math.min(dist, maxSpeed * Math.min(1, dist * 0.4 + 0.02));
+                    p.container.position.x += (dx / dist) * moveAmt;
+                    p.container.position.z += (dz / dist) * moveAmt;
+                }
+
+                p.container.lookAt(p.lookPos); p.mesh.rotation.z += 0.5 * dt;
             });
 
+            // 3. PARTICLES
             for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i]; p.life -= delta * 0.7;
-                const pos = p.mesh.geometry.attributes.position.array;
-                for (let j = 0; j < p.vels.length; j++) {
-                    pos[j*3] += p.vels[j].x; pos[j*3+1] += p.vels[j].y; pos[j*3+2] += p.vels[j].z;
-                }
-                p.mesh.geometry.attributes.position.needsUpdate = true;
-                p.mesh.material.opacity = p.life;
-                if (p.life <= 0) { scene.remove(p.mesh); particles.splice(i, 1); }
+                const p = particles[i]; p.life -= dt * 0.7;
+                const posArr = p.pts.geometry.attributes.position.array;
+                p.vels.forEach((v, j) => { posArr[j*3] += v.x; posArr[j*3+1] += v.y; posArr[j*3+2] += v.z; });
+                p.pts.geometry.attributes.position.needsUpdate = true; p.pts.material.opacity = p.life;
+                if (p.life <= 0) { scene.remove(p.pts); particles.splice(i, 1); }
             }
             composer.render();
         }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
         animate();
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
     </script>
 </body>
 </html>
