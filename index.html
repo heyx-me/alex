@@ -26,7 +26,7 @@
         import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
         const scoreEl = document.getElementById('score'), WORLD_H = 150;
-        let score = 0, scrollY = 0, targetScrollY = 0, autoTime = 0;
+        let score = 0, scrollX = 0, targetScrollX = 0, scrollY = 0, targetScrollY = 0, autoTime = 0;
 
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x030305, 0.012);
@@ -83,27 +83,33 @@
             scene.add(pts); particles.push({ pts, vels, life: 1 });
         };
 
-        let lastTouchY = 0;
-        window.addEventListener('wheel', (e) => { targetScrollY += e.deltaY; }, { passive: true });
-        window.addEventListener('touchstart', (e) => { lastTouchY = e.touches[0].clientY; }, { passive: true });
+        let lastTouchX = 0, lastTouchY = 0;
+        window.addEventListener('wheel', (e) => { targetScrollY += e.deltaY; targetScrollX += e.deltaX; }, { passive: true });
+        window.addEventListener('touchstart', (e) => { lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY; }, { passive: true });
         window.addEventListener('touchmove', (e) => { 
-            const delta = lastTouchY - e.touches[0].clientY;
-            targetScrollY += delta * 2; lastTouchY = e.touches[0].clientY;
+            const dx = e.touches[0].clientX - lastTouchX, dy = lastTouchY - e.touches[0].clientY;
+            targetScrollX = Math.max(-600, Math.min(600, targetScrollX + dx * 2));
+            targetScrollY += dy * 2;
+            lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY;
         }, { passive: true });
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
             const dt = clock.getDelta(), time = clock.getElapsedTime();
-            autoTime += dt * 5; scrollY += (targetScrollY - scrollY) * 0.05;
-            const move = autoTime + (scrollY * 0.015);
+            autoTime += dt * 5; 
+            scrollX += (targetScrollX - scrollX) * 0.1;
+            scrollY += (targetScrollY - scrollY) * 0.05;
+            const moveRings = autoTime + (scrollY * 0.001);
+            const movePyramids = autoTime + (scrollY * 0.035);
+            const offsetX = scrollX * 0.02;
 
-            stars1.position.y = (move * 0.2) % WORLD_H;
+            stars1.position.y = (movePyramids * 0.2) % WORLD_H;
             stars2.position.y = stars1.position.y - WORLD_H;
 
             // 1. UPDATE RINGS FIRST
             rings.forEach(r => {
-                const rawY = r.yOffset - move;
+                const rawY = r.yOffset - moveRings;
                 r.mesh.position.y = ((rawY % WORLD_H) + WORLD_H) % WORLD_H - (WORLD_H / 2);
                 const curWrap = Math.floor(rawY / WORLD_H);
                 if (curWrap !== r.wrap) {
@@ -132,9 +138,9 @@
             pyramids.forEach(p => {
                 p.lastPos.copy(p.container.position);
                 p.bAcc += p.bVel * dt; p.bVel *= 0.94;
-                p.container.position.y = calcY(p.yOffset, move + p.bAcc);
+                p.container.position.y = calcY(p.yOffset, movePyramids + p.bAcc);
                 const angle = time * p.freq + p.phase;
-                const orbitX = Math.cos(angle) * p.ampX, orbitZ = Math.sin(angle) * p.ampZ;
+                const orbitX = Math.cos(angle) * p.ampX + offsetX, orbitZ = Math.sin(angle) * p.ampZ;
 
                 if (p.lockCooldown > 0) p.lockCooldown -= dt;
 
@@ -207,7 +213,7 @@
                             if (p.collisions >= 3) {
                                 spawnExplosion(p.container.position, p.color);
                                 p.collisions = 0; p.bAcc = 0; p.bVel = 0; 
-                                p.container.position.y = calcY(p.yOffset, move);
+                                p.container.position.y = calcY(p.yOffset, movePyramids);
                                 p.currentTarget = null; p.lockCooldown = 3.0;
                             }
                             if (target.collisions >= 3) {
