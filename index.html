@@ -63,7 +63,7 @@
                 color: pyramidColors[i%4], lookPos: new THREE.Vector3(), 
                 bVel: 0, bAcc: 0, lockAlpha: 0, currentTarget: null, 
                 lockCooldown: 0, lastRelY: -1, lastTargetPos: new THREE.Vector3(),
-                lastPos: new THREE.Vector3()
+                lastPos: new THREE.Vector3(), collisions: 0
             });
         }
 
@@ -71,7 +71,7 @@
         for (let i = 0; i < 8; i++) {
             const r = new THREE.Mesh(new THREE.TorusGeometry(3, 0.1, 16, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 }));
             scene.add(r);
-            rings.push({ mesh: r, id: i, yOffset: (i/8)*WORLD_H, xPos: ((i%4)-1.5)*4, zPos: (Math.random()-0.5)*4, wrap: 0, hit: false, color: null, lookPos: new THREE.Vector3(), lockedBy: null });
+            rings.push({ mesh: r, id: i, yOffset: (i/8)*WORLD_H, xPos: ((i%4)-1.5)*4, zPos: (Math.random()-0.5)*4, wrap: 0, hit: false, color: null, lookPos: new THREE.Vector3(), lockedBy: null, collisions: 0 });
         }
 
         const particles = [];
@@ -182,18 +182,42 @@
                         const crossZ = THREE.MathUtils.lerp(p.lastPos.z, p.container.position.z, t);
                         const distToCenter = Math.sqrt(Math.pow(crossX - target.mesh.position.x, 2) + Math.pow(crossZ - target.mesh.position.z, 2));
 
-                        if (distToCenter < 1.1) { // Clean pass: Pyramid base (1.8) + clearance < Ring inner hole (2.9)
+                        // Alignment-aware strictness
+                        const pDir = new THREE.Vector3(0,0,1).applyQuaternion(p.container.quaternion);
+                        const rDir = new THREE.Vector3(0,0,1).applyQuaternion(target.mesh.quaternion);
+                        const alignment = Math.abs(pDir.dot(rDir)); // 1.0 = perfect, 0.0 = perpendicular
+                        
+                        // Strictness: threshold shrinks as alignment worsens. 
+                        // If we already collided, we relax the rule slightly as requested.
+                        let threshold = 1.1 * Math.pow(alignment, 2); 
+                        if (p.collisions > 0) threshold *= 1.5; 
+
+                        if (distToCenter < threshold) { // Successful Pass
                             if (target.color !== p.color) {
                                 target.mesh.material.color.set(p.color); target.mesh.material.opacity = 0.8; target.color = p.color;
                                 if (!target.hit) { target.hit = true; score++; scoreEl.innerText = score; }
                                 spawnExplosion(target.mesh.position, p.color);
-                                p.bVel += 70 * dt; 
+                                p.bVel += 70 * dt; p.collisions = 0; 
                                 p.currentTarget = null; p.lockCooldown = 1.0; 
                             }
-                        } else if (distToCenter < 3.2) { // Collision: Pyramid hits the torus ring tube
-                            spawnExplosion(p.container.position, 0xff4400); // Orange/Red sparks for collision
-                            p.bVel = -20; // Rebound penalty: lose momentum
-                            p.currentTarget = null; p.lockCooldown = 2.0; 
+                        } else if (distToCenter < 3.2) { // Collision
+                            spawnExplosion(p.container.position, 0xff4400); 
+                            p.bVel = -25; p.collisions++; target.collisions++; // Stronger rebound to allow "hit after collision"
+                            
+                            if (p.collisions >= 3) {
+                                spawnExplosion(p.container.position, p.color);
+                                p.collisions = 0; p.bAcc = 0; p.bVel = 0; 
+                                p.container.position.y = calcY(p.yOffset, move);
+                                p.currentTarget = null; p.lockCooldown = 3.0;
+                            }
+                            if (target.collisions >= 3) {
+                                spawnExplosion(target.mesh.position, 0xffffff);
+                                target.collisions = 0; target.wrap--; 
+                                target.mesh.visible = false;
+                                p.currentTarget = null;
+                            }
+                            // Note: p.currentTarget is NOT cleared here unless destroyed, 
+                            // allowing the rebound to potentially trigger another 'passed' event.
                         }
                     }
                     p.lastRelY = relY;
