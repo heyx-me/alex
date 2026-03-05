@@ -182,7 +182,7 @@
                         const crossZ = THREE.MathUtils.lerp(p.lastPos.z, p.container.position.z, t);
                         const distToCenter = Math.sqrt(Math.pow(crossX - target.mesh.position.x, 2) + Math.pow(crossZ - target.mesh.position.z, 2));
 
-                        if (distToCenter < 2.8) { // Hole is roughly radius 3.0
+                        if (distToCenter < 1.1) { // Clean pass: Pyramid base (1.8) + clearance < Ring inner hole (2.9)
                             if (target.color !== p.color) {
                                 target.mesh.material.color.set(p.color); target.mesh.material.opacity = 0.8; target.color = p.color;
                                 if (!target.hit) { target.hit = true; score++; scoreEl.innerText = score; }
@@ -190,6 +190,10 @@
                                 p.bVel += 70 * dt; 
                                 p.currentTarget = null; p.lockCooldown = 1.0; 
                             }
+                        } else if (distToCenter < 3.2) { // Collision: Pyramid hits the torus ring tube
+                            spawnExplosion(p.container.position, 0xff4400); // Orange/Red sparks for collision
+                            p.bVel = -20; // Rebound penalty: lose momentum
+                            p.currentTarget = null; p.lockCooldown = 2.0; 
                         }
                     }
                     p.lastRelY = relY;
